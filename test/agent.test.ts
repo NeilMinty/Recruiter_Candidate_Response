@@ -13,7 +13,11 @@ interface AgentOutput {
 }
 
 function parseAgentResponse(text: string): AgentOutput {
-  const parsed = JSON.parse(text) as AgentOutput
+  const rawText = text.trim()
+  const jsonText = rawText.startsWith('```')
+    ? rawText.replace(/^```(?:json)?\s*/, '').replace(/\s*```$/, '')
+    : rawText
+  const parsed = JSON.parse(jsonText) as AgentOutput
   if (!parsed.evaluation || !parsed.evidence_statement || !parsed.draft_message) {
     throw new Error('Agent response missing required fields')
   }
@@ -59,6 +63,26 @@ describe('agent response parsing', () => {
 
   it('throws on invalid JSON', () => {
     expect(() => parseAgentResponse('not json')).toThrow()
+  })
+
+  it('parses a valid response wrapped in ```json code fences', () => {
+    const raw = '```json\n' + JSON.stringify({
+      evaluation: 'Strong technical background.',
+      evidence_statement: 'We assessed CV and transcript.',
+      draft_message: 'Thank you for your time.',
+    }) + '\n```'
+    const result = parseAgentResponse(raw)
+    expect(result.evaluation).toBe('Strong technical background.')
+  })
+
+  it('parses a valid response wrapped in plain ``` code fences', () => {
+    const raw = '```\n' + JSON.stringify({
+      evaluation: 'Strong technical background.',
+      evidence_statement: 'We assessed CV and transcript.',
+      draft_message: 'Thank you for your time.',
+    }) + '\n```'
+    const result = parseAgentResponse(raw)
+    expect(result.evaluation).toBe('Strong technical background.')
   })
 
   it('throws when fields are empty strings', () => {

@@ -81,7 +81,12 @@ ${recruiterNotes ?? 'Not provided.'}`
     throw new Error('Unexpected response type from agent')
   }
 
-  const parsed: AgentOutput = JSON.parse(content.text)
+  const rawText = content.text.trim()
+  const jsonText = rawText.startsWith('```')
+    ? rawText.replace(/^```(?:json)?\s*/, '').replace(/\s*```$/, '')
+    : rawText
+
+  const parsed: AgentOutput = JSON.parse(jsonText)
 
   if (!parsed.evaluation || !parsed.evidence_statement || !parsed.draft_message) {
     throw new Error('Agent response missing required fields')
