@@ -37,5 +37,6 @@ export async function GET(req: NextRequest) {
     deleted++
   }
 
+  console.log(`[cron/purge] deleted ${deleted} candidate(s)`)
   return NextResponse.json({ deleted })
 }
