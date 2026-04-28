@@ -1,5 +1,5 @@
 import Anthropic from '@anthropic-ai/sdk'
-import { BANNED_PHRASES } from './banned-phrases'
+import { BANNED_PHRASES, BANNED_CONSTRUCTIONS } from './banned-phrases'
 
 const client = new Anthropic()
 
@@ -45,6 +45,8 @@ Your job is to produce three outputs:
    - Names the primary gap plainly
    - No template language. The following phrases are banned — do not use them or close variations:
 ${BANNED_PHRASES.map(p => `     · "${p}"`).join('\n')}
+   - The following structural constructions are also banned:
+${BANNED_CONSTRUCTIONS.map(c => `     · ${c}`).join('\n')}
    - If a decision statement is needed, use "After reviewing everything, we don't think this is the right match."
    - Signed off as coming from the recruiter (use "we" not "I")
    - Maximum 150 words
