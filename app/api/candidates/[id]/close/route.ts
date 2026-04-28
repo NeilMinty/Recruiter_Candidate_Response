@@ -5,6 +5,8 @@ import { runEvaluationAgent } from '@/lib/agent'
 import { downloadFile } from '@/lib/upload'
 import { extractText } from '@/lib/pdf'
 
+export const maxDuration = 60
+
 export async function POST(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
