@@ -114,7 +114,7 @@ cp .env.local.example .env.local
 
 **3. Run the schema**
 
-In your Supabase project, open the SQL editor and run the migration files from `supabase/migrations/` in filename order.
+In your Supabase project, open the **SQL editor** and paste the contents of `schema.sql` from the repo root. Run it once. This creates all tables in the correct dependency order.
 
 **4. Create the storage bucket**
 
