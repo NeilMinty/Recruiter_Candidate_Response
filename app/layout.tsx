@@ -1,25 +1,31 @@
 import type { Metadata } from 'next'
-import { Geist } from 'next/font/google'
+import { IBM_Plex_Sans, IBM_Plex_Mono } from 'next/font/google'
 import './globals.css'
 import AuthGuard from './AuthGuard'
 
-const geist = Geist({ variable: '--font-geist-sans', subsets: ['latin'] })
+const ibmPlexSans = IBM_Plex_Sans({
+  weight: ['400', '500', '600'],
+  subsets: ['latin'],
+  variable: '--font-ibm-plex-sans',
+})
+
+const ibmPlexMono = IBM_Plex_Mono({
+  weight: ['400', '500'],
+  subsets: ['latin'],
+  variable: '--font-ibm-plex-mono',
+})
 
 export const metadata: Metadata = {
   title: 'Closure',
   description: 'Send specific, evidenced rejection emails to interviewed candidates.',
 }
 
-export default function RootLayout({
-  children,
-}: {
-  children: React.ReactNode
-}) {
+export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" className={`${geist.variable} h-full`}>
-      <body className="min-h-full bg-gray-50 text-gray-900 font-sans antialiased">
+    <html lang="en" className={`${ibmPlexSans.variable} ${ibmPlexMono.variable} h-full`}>
+      <body className="min-h-full bg-background text-foreground font-sans antialiased">
         <AuthGuard />
-        <div className="max-w-4xl mx-auto px-6 py-8">{children}</div>
+        <div className="max-w-5xl mx-auto px-6 py-10">{children}</div>
       </body>
     </html>
   )
