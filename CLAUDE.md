@@ -10,7 +10,7 @@ Recruiter tool for generating evidenced rejection emails. Recruiter adds a role 
 - **Supabase** — Postgres (roles, candidates, evaluations, audit_log) + Storage bucket `candidate-files`
 - **Anthropic** — `claude-sonnet-4-5`, evaluation agent in `lib/agent.ts`
 - **Resend** — email delivery, send-only key, `lib/email.ts`
-- **pdf-parse v2** — CV/transcript text extraction, `lib/pdf.ts`
+- **pdf-parse v1** — CV/transcript text extraction, `lib/pdf.ts`. Must stay on v1 — v2 is a browser-first rewrite that references `DOMMatrix` and other browser-only APIs, causing a `ReferenceError` in Vercel's Node.js serverless runtime.
 
 ## Architecture
 
@@ -35,7 +35,7 @@ app/
     cron/purge/route.ts            GET: hard-delete candidates older than 90 days
 
 lib/
-  supabase.ts   getServiceClient() / getAnonClient()
+  supabase.ts   getServiceClient()
   auth.ts       requireAdmin() — checks x-admin-secret header
   client.ts     apiFetch() — injects admin_secret from localStorage
   agent.ts      runEvaluationAgent() — Claude API, returns evaluation/evidence/draft
