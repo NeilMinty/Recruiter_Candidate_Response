@@ -34,86 +34,91 @@ function getIp(req: NextRequest): string {
 }
 
 export async function POST(req: NextRequest) {
-  const ip = getIp(req)
+  try {
+    const ip = getIp(req)
 
-  if (!checkRateLimit(ip)) {
-    return NextResponse.json(
-      { error: 'Too many requests. Please try again in an hour.' },
-      { status: 429 }
-    )
-  }
-
-  const formData = await req.formData()
-  const jobDescription = (formData.get('job_description') as string | null)?.trim() ?? ''
-  const cvFile = formData.get('cv') as File | null
-  const transcriptFile = formData.get('transcript') as File | null
-  const interviewNotes = (formData.get('interview_notes') as string | null)?.trim() || null
-
-  if (!jobDescription) {
-    return NextResponse.json({ error: 'job_description is required' }, { status: 400 })
-  }
-
-  if (!cvFile) {
-    return NextResponse.json({ error: 'cv file is required' }, { status: 400 })
-  }
-
-  const ALLOWED_TYPES = ['application/pdf', 'text/plain']
-  const MAX_SIZE = 10 * 1024 * 1024
-
-  if (!ALLOWED_TYPES.includes(cvFile.type)) {
-    return NextResponse.json(
-      { error: 'CV must be a PDF or plain text file' },
-      { status: 400 }
-    )
-  }
-
-  if (cvFile.size > MAX_SIZE) {
-    return NextResponse.json({ error: 'CV file size exceeds 10 MB' }, { status: 400 })
-  }
-
-  const cvBuffer = Buffer.from(await cvFile.arrayBuffer())
-  const cvText = await extractText(cvBuffer, cvFile.type)
-
-  if (!cvText) {
-    return NextResponse.json(
-      { error: 'Could not extract text from CV. Please try a different file.' },
-      { status: 400 }
-    )
-  }
-
-  let transcriptText: string | null = null
-  if (transcriptFile) {
-    if (!ALLOWED_TYPES.includes(transcriptFile.type)) {
+    if (!checkRateLimit(ip)) {
       return NextResponse.json(
-        { error: 'Transcript must be a PDF or plain text file' },
+        { error: 'Too many requests. Please try again in an hour.' },
+        { status: 429 }
+      )
+    }
+
+    console.log('[demo/evaluate] parsing form data')
+    const formData = await req.formData()
+    const jobDescription = (formData.get('job_description') as string | null)?.trim() ?? ''
+    const cvFile = formData.get('cv') as File | null
+    const transcriptFile = formData.get('transcript') as File | null
+    const interviewNotes = (formData.get('interview_notes') as string | null)?.trim() || null
+
+    if (!jobDescription) {
+      return NextResponse.json({ error: 'job_description is required' }, { status: 400 })
+    }
+
+    if (!cvFile) {
+      return NextResponse.json({ error: 'cv file is required' }, { status: 400 })
+    }
+
+    const ALLOWED_TYPES = ['application/pdf', 'text/plain']
+    const MAX_SIZE = 10 * 1024 * 1024
+
+    if (!ALLOWED_TYPES.includes(cvFile.type)) {
+      return NextResponse.json(
+        { error: 'CV must be a PDF or plain text file' },
         { status: 400 }
       )
     }
-    if (transcriptFile.size > MAX_SIZE) {
-      return NextResponse.json({ error: 'Transcript file size exceeds 10 MB' }, { status: 400 })
-    }
-    const transcriptBuffer = Buffer.from(await transcriptFile.arrayBuffer())
-    transcriptText = await extractText(transcriptBuffer, transcriptFile.type) || null
-  }
 
-  let result
-  try {
-    result = await runEvaluationAgent({
+    if (cvFile.size > MAX_SIZE) {
+      return NextResponse.json({ error: 'CV file size exceeds 10 MB' }, { status: 400 })
+    }
+
+    console.log('[demo/evaluate] extracting CV text, type:', cvFile.type, 'size:', cvFile.size)
+    const cvBuffer = Buffer.from(await cvFile.arrayBuffer())
+    const cvText = await extractText(cvBuffer, cvFile.type)
+
+    if (!cvText) {
+      return NextResponse.json(
+        { error: 'Could not extract text from CV. Please try a different file.' },
+        { status: 400 }
+      )
+    }
+    console.log('[demo/evaluate] CV extracted, chars:', cvText.length)
+
+    let transcriptText: string | null = null
+    if (transcriptFile) {
+      if (!ALLOWED_TYPES.includes(transcriptFile.type)) {
+        return NextResponse.json(
+          { error: 'Transcript must be a PDF or plain text file' },
+          { status: 400 }
+        )
+      }
+      if (transcriptFile.size > MAX_SIZE) {
+        return NextResponse.json({ error: 'Transcript file size exceeds 10 MB' }, { status: 400 })
+      }
+      const transcriptBuffer = Buffer.from(await transcriptFile.arrayBuffer())
+      transcriptText = await extractText(transcriptBuffer, transcriptFile.type) || null
+      console.log('[demo/evaluate] transcript extracted, chars:', transcriptText?.length ?? 0)
+    }
+
+    console.log('[demo/evaluate] calling agent')
+    const result = await runEvaluationAgent({
       jobDescription,
       cvText,
       transcriptText,
       recruiterNotes: interviewNotes,
     })
+    console.log('[demo/evaluate] agent complete')
+
+    // No database writes — demo evaluations are ephemeral
+    return NextResponse.json({
+      evaluation: result.evaluation,
+      evidence_statement: result.evidence_statement,
+      draft_message: result.draft_message,
+    })
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err)
-    console.error('[demo/evaluate] agent error:', message)
-    return NextResponse.json({ error: 'Failed to generate response. Please try again.' }, { status: 500 })
+    console.error('[demo/evaluate] unhandled error:', message)
+    return NextResponse.json({ error: 'Something went wrong. Please try again.' }, { status: 500 })
   }
-
-  // No database writes — demo evaluations are ephemeral
-  return NextResponse.json({
-    evaluation: result.evaluation,
-    evidence_statement: result.evidence_statement,
-    draft_message: result.draft_message,
-  })
 }
