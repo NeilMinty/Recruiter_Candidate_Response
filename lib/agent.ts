@@ -85,9 +85,15 @@ ${recruiterNotes?.trim() || 'Not provided.'}`
 
   const rawText = content.text.trim()
 
+  // Strip markdown code fences the model occasionally adds despite instructions
+  const jsonText = rawText
+    .replace(/^```(?:json)?\s*/i, '')
+    .replace(/\s*```$/, '')
+    .trim()
+
   let parsed: AgentOutput
   try {
-    parsed = JSON.parse(rawText) as AgentOutput
+    parsed = JSON.parse(jsonText) as AgentOutput
   } catch {
     throw new Error(
       `Agent returned invalid JSON. Raw response: ${rawText.slice(0, 200)}`
