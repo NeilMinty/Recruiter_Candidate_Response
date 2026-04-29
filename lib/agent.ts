@@ -37,6 +37,10 @@ Produce three outputs:
 - Maximum 150 words
 - Signs off as "we" not "I"
 
+The opening and closing lines of the draft message are where template language is most likely to appear. You must be especially vigilant here. Do not open with a decision statement. Do not close with a generic sign-off. The closing line should reference something specific to this candidate or this role — not a generic expression of thanks or good wishes.
+
+The following phrase is the single most common template rejection phrase in existence. Never use it or any variation of it under any circumstances: "We have decided not to progress your application"
+
 BANNED PHRASES — never use any of these or close variations:
 ${BANNED_PHRASES.map(p => `- "${p}"`).join('\n')}
 

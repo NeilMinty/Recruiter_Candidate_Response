@@ -3,13 +3,18 @@
  * Add to this list as new template language is identified in generated output.
  */
 export const BANNED_PHRASES: string[] = [
+  "we have decided not to progress your application",
   "we've decided not to progress your application",
+  "we have decided not to move forward with your application",
+  "thank you for your interest in",
+  "thank you for your interest in the role",
+  "thank you for your interest in this opportunity",
+  "thank you for your interest in the position",
   "we're moving forward with other candidates",
   "we've decided to move forward with other candidates",
   "we will keep your CV on file",
   "we wish you all the best in your search",
   "we wish you all the best in your future endeavours",
-  "thank you for your interest in this opportunity",
   "after careful consideration",
   "we had many strong candidates",
   "this was a difficult decision",
