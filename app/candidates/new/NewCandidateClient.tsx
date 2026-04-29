@@ -11,6 +11,20 @@ type ImportState =
   | { phase: 'done' }
   | { phase: 'error'; message: string }
 
+type NoteTakerSource = 'fireflies' | 'grain' | 'otter'
+
+const NOTE_TAKER_LABELS: Record<NoteTakerSource, string> = {
+  fireflies: 'Fireflies',
+  grain: 'Grain',
+  otter: 'Otter',
+}
+
+type NoteTakerFetchState =
+  | { phase: 'idle' }
+  | { phase: 'loading' }
+  | { phase: 'done' }
+  | { phase: 'error'; message: string }
+
 type BrowseState =
   | { phase: 'idle' }
   | { phase: 'loading' }
@@ -47,6 +61,10 @@ export default function NewCandidateClient({ roleId, greenhouseJobId, hasGreenho
   const [importState, setImportState] = useState<ImportState>({ phase: 'idle' })
   const [browseState, setBrowseState] = useState<BrowseState>({ phase: 'idle' })
   const [importedData, setImportedData] = useState<ImportedData | null>(null)
+
+  const [noteTakerSource, setNoteTakerSource] = useState<NoteTakerSource | null>(null)
+  const [noteTakerId, setNoteTakerId] = useState('')
+  const [noteTakerState, setNoteTakerState] = useState<NoteTakerFetchState>({ phase: 'idle' })
 
   const ghDisabled = !hasGreenhouseKey
   const ghNoJob = hasGreenhouseKey && !greenhouseJobId
@@ -145,6 +163,33 @@ export default function NewCandidateClient({ roleId, greenhouseJobId, hasGreenho
       setError(err instanceof Error ? err.message : 'Something went wrong')
       setSubmitting(false)
     }
+  }
+
+  async function handleFetchTranscript() {
+    if (!noteTakerSource || !noteTakerId.trim()) return
+    setNoteTakerState({ phase: 'loading' })
+
+    const params = new URLSearchParams({ source: noteTakerSource, id: noteTakerId.trim() })
+    const res = await apiFetch(`/api/transcript/fetch?${params}`)
+    const data = await res.json()
+
+    if (!res.ok) {
+      setNoteTakerState({ phase: 'error', message: data.error ?? 'Failed to fetch transcript.' })
+      return
+    }
+
+    if (data.transcript_text) {
+      const blob = new Blob([data.transcript_text], { type: 'text/plain' })
+      const file = new File([blob], `${noteTakerSource}-transcript.txt`, { type: 'text/plain' })
+      setTranscriptFile(file)
+    }
+    setNoteTakerState({ phase: 'done' })
+  }
+
+  function selectNoteTaker(source: NoteTakerSource) {
+    setNoteTakerSource(source)
+    setNoteTakerId('')
+    setNoteTakerState({ phase: 'idle' })
   }
 
   const imported = importState.phase === 'done' && importedData !== null
@@ -355,34 +400,106 @@ export default function NewCandidateClient({ roleId, greenhouseJobId, hasGreenho
             <label className="block text-[11px] font-medium tracking-widest uppercase text-neutral-500 mb-2">
               Interview transcript <span className="normal-case font-normal tracking-normal">— optional</span>
             </label>
-            <button
-              type="button"
-              onClick={() => transcriptInputRef.current?.click()}
-              className={`w-full border border-dashed px-4 py-8 text-center transition-colors ${
-                transcriptFile
-                  ? 'border-neutral-400 bg-white'
-                  : 'border-neutral-300 bg-white hover:border-neutral-400'
-              }`}
-            >
-              {transcriptFile ? (
-                <div>
-                  <p className="text-sm font-medium">{transcriptFile.name}</p>
-                  <p className="text-xs text-neutral-400 mt-1">Click to replace</p>
+            <div className="border border-dashed border-neutral-300 grid grid-cols-[1fr_auto_1fr]">
+
+              {/* Left: Upload */}
+              <div className="p-4 flex flex-col">
+                <p className="text-[11px] font-medium tracking-widest uppercase text-neutral-400 mb-3">
+                  Upload transcript
+                </p>
+                <button
+                  type="button"
+                  onClick={() => transcriptInputRef.current?.click()}
+                  className="flex-1 flex flex-col items-center justify-center py-6 text-center hover:bg-neutral-50 transition-colors"
+                >
+                  {transcriptFile ? (
+                    <>
+                      <p className="text-sm font-medium">{transcriptFile.name}</p>
+                      <p className="text-xs text-neutral-400 mt-1">Click to replace</p>
+                    </>
+                  ) : (
+                    <>
+                      <p className="text-sm text-neutral-500">Click to upload transcript</p>
+                      <p className="text-xs text-neutral-400 mt-1">PDF or .txt · Teams/Zoom exports accepted · max 10 MB</p>
+                    </>
+                  )}
+                </button>
+                <input
+                  ref={transcriptInputRef}
+                  type="file"
+                  accept=".pdf,.txt,text/plain,application/pdf"
+                  onChange={(e) => setTranscriptFile(e.target.files?.[0] ?? null)}
+                  className="hidden"
+                />
+              </div>
+
+              {/* Vertical OR divider */}
+              <div className="flex flex-col items-center justify-center px-3">
+                <div className="flex-1 w-px bg-neutral-200" />
+                <span className="text-[11px] font-medium tracking-widest uppercase text-neutral-400 py-3">Or</span>
+                <div className="flex-1 w-px bg-neutral-200" />
+              </div>
+
+              {/* Right: Note-taker import */}
+              <div className="p-4 flex flex-col">
+                <p className="text-[11px] font-medium tracking-widest uppercase text-neutral-400 mb-3">
+                  Import from note-taker
+                </p>
+
+                {/* Source selector */}
+                <div className="flex gap-2 mb-3">
+                  {(Object.keys(NOTE_TAKER_LABELS) as NoteTakerSource[]).map((src) => (
+                    <button
+                      key={src}
+                      type="button"
+                      onClick={() => selectNoteTaker(src)}
+                      className={`text-xs font-medium px-3 py-1.5 border transition-colors ${
+                        noteTakerSource === src
+                          ? 'border-foreground bg-white text-foreground'
+                          : 'border-neutral-200 bg-white text-neutral-500 hover:border-neutral-400'
+                      }`}
+                    >
+                      {NOTE_TAKER_LABELS[src]}
+                    </button>
+                  ))}
                 </div>
-              ) : (
-                <div>
-                  <p className="text-sm text-neutral-500">Click to upload transcript</p>
-                  <p className="text-xs text-neutral-400 mt-1">PDF or .txt · Teams/Zoom exports accepted · max 10 MB</p>
-                </div>
-              )}
-            </button>
-            <input
-              ref={transcriptInputRef}
-              type="file"
-              accept=".pdf,.txt,text/plain,application/pdf"
-              onChange={(e) => setTranscriptFile(e.target.files?.[0] ?? null)}
-              className="hidden"
-            />
+
+                {noteTakerSource && (
+                  <div className="space-y-2 flex-1 flex flex-col justify-between">
+                    <div>
+                      <input
+                        type="text"
+                        value={noteTakerId}
+                        onChange={(e) => { setNoteTakerId(e.target.value); setNoteTakerState({ phase: 'idle' }) }}
+                        onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); handleFetchTranscript() } }}
+                        placeholder="Meeting URL or meeting ID"
+                        className="w-full border border-neutral-200 bg-white px-3 py-2 text-sm focus:outline-none focus:border-foreground transition-colors"
+                      />
+                    </div>
+                    <div className="space-y-1.5">
+                      <button
+                        type="button"
+                        onClick={handleFetchTranscript}
+                        disabled={!noteTakerId.trim() || noteTakerState.phase === 'loading'}
+                        className="w-full bg-white border border-neutral-200 text-xs font-medium px-3 py-2 tracking-wide hover:border-neutral-400 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                      >
+                        {noteTakerState.phase === 'loading' ? 'Fetching...' : 'Fetch transcript'}
+                      </button>
+                      {noteTakerState.phase === 'done' && (
+                        <p className="text-xs text-accent">Transcript imported.</p>
+                      )}
+                      {noteTakerState.phase === 'error' && (
+                        <p className="text-xs text-red-600">{noteTakerState.message}</p>
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                {!noteTakerSource && (
+                  <p className="text-xs text-neutral-400 mt-1">Select a platform above.</p>
+                )}
+              </div>
+            </div>
           </div>
 
           <div>
