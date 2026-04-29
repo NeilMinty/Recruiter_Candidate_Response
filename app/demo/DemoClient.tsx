@@ -58,17 +58,7 @@ export default function DemoClient() {
   const canGenerate = jobDescription.trim().length > 0 && cvFile !== null && state.phase !== 'loading'
 
   return (
-    <div className="min-h-screen bg-background">
-      {/* Header */}
-      <div className="border-b border-neutral-200 bg-white">
-        <div className="max-w-2xl mx-auto px-6 py-5">
-          <p className="text-[11px] font-medium tracking-widest uppercase text-neutral-400 mb-0.5">
-            Closure
-          </p>
-        </div>
-      </div>
-
-      <div className="max-w-2xl mx-auto px-6 py-12">
+    <div className="max-w-2xl mx-auto px-6 py-12">
         {/* Framing */}
         <div className="mb-10">
           <h1 className="text-2xl font-semibold leading-snug mb-3">
@@ -240,6 +230,5 @@ export default function DemoClient() {
           </div>
         )}
       </div>
-    </div>
   )
 }

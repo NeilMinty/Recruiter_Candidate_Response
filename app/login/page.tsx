@@ -42,9 +42,6 @@ export default function LoginPage() {
     <div className="min-h-screen flex items-center justify-center">
       <div className="w-full max-w-xs">
         <div className="mb-8">
-          <p className="text-[11px] font-medium tracking-widest uppercase text-neutral-500 mb-0.5">
-            Closure
-          </p>
           <h1 className="text-xl font-semibold">Sign in</h1>
         </div>
 

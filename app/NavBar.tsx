@@ -1,12 +1,6 @@
-'use client'
-
-import { usePathname } from 'next/navigation'
 import Link from 'next/link'
 
 export default function NavBar() {
-  const pathname = usePathname()
-  if (pathname === '/demo') return null
-
   return (
     <nav className="border-b border-neutral-200 bg-white">
       <div className="max-w-5xl mx-auto px-6 h-10 flex items-center justify-between">
