@@ -35,6 +35,11 @@ export async function POST(req: NextRequest) {
   const recruiter_notes = formData.get('recruiter_notes') as string | null
   const cvFile = formData.get('cv') as File | null
   const transcriptFile = formData.get('transcript') as File | null
+  // Pre-uploaded fields from Greenhouse import
+  const importedCvPath = (formData.get('cv_path') as string | null)?.trim() || null
+  const importedCvText = (formData.get('cv_text') as string | null)?.trim() || null
+  const greenhouseCandidateId = (formData.get('greenhouse_candidate_id') as string | null)?.trim() || null
+  const greenhouseApplicationId = (formData.get('greenhouse_application_id') as string | null)?.trim() || null
 
   if (!role_id || !name?.trim() || !email?.trim()) {
     return NextResponse.json(
@@ -43,12 +48,18 @@ export async function POST(req: NextRequest) {
     )
   }
 
-  if (!cvFile) {
+  if (!cvFile && !importedCvPath) {
     return NextResponse.json({ error: 'cv file is required' }, { status: 400 })
   }
 
   try {
-    const cv = await processUpload(cvFile, 'cv')
+    let cv: { path: string; text: string }
+    if (importedCvPath) {
+      cv = { path: importedCvPath, text: importedCvText ?? '' }
+    } else {
+      cv = await processUpload(cvFile!, 'cv')
+    }
+
     let transcript: { path: string; text: string } | null = null
     if (transcriptFile) {
       transcript = await processUpload(transcriptFile, 'transcript')
@@ -66,6 +77,8 @@ export async function POST(req: NextRequest) {
         transcript_path: transcript?.path ?? null,
         transcript_text: transcript?.text ?? null,
         recruiter_notes: recruiter_notes?.trim() ?? null,
+        ...(greenhouseCandidateId ? { greenhouse_candidate_id: parseInt(greenhouseCandidateId, 10) } : {}),
+        ...(greenhouseApplicationId ? { greenhouse_application_id: parseInt(greenhouseApplicationId, 10) } : {}),
       })
       .select()
       .single()
