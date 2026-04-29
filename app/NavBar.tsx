@@ -1,4 +1,5 @@
 import Link from 'next/link'
+import SignOutButton from './SignOutButton'
 
 export default function NavBar() {
   return (
@@ -23,6 +24,7 @@ export default function NavBar() {
           >
             Settings
           </Link>
+          <SignOutButton />
         </div>
       </div>
     </nav>
